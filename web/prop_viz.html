@@ -284,6 +284,7 @@
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.addEventListener( 'mousewheel', onMouseWheel, false);
 				document.addEventListener( 'DOMMouseScroll', onMouseWheel, false); // for firefox
+				document.addEventListener( 'touchmove', onTouchmove, false );
 				renderer.domElement.addEventListener( 'mousedown', onWebGLMouseDown, false);
 				renderer.domElement.addEventListener( 'mouseup', onWebGLMouseUp, false);
 
@@ -360,6 +361,49 @@
 				}
 				singleGeometry.verticesNeedUpdate = true;
 
+			}
+
+			function onTouchmove( event ) {
+				if (event.touches.length == 1) {
+
+					mouse.x = ( event.touches[ 0 ].pageX / window.innerWidth ) * 2 - 1;
+					mouse.y = - ( event.touches[ 0 ].pageY / window.innerHeight ) * 2 + 1;
+
+					var vector = new THREE.Vector3();
+
+					vector.set(
+						( event.touches[ 0 ].pageX / window.innerWidth ) * 2 - 1,
+						- ( event.touches[ 0 ].pageY / window.innerHeight ) * 2 + 1,
+						0.5 );
+
+					vector.unproject( camera );
+
+					var dir = vector.sub( camera.position ).normalize();
+
+					var distance = - camera.position.z / dir.z;
+
+					pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+					fisheye.focus([pos.x,pos.y]);
+
+					for (var i = 0;i < singleGeometry.vertices.length;i+=4) {
+						var cur_coords = [collection[i/4]['embedding_x'],collection[i/4]['embedding_y']];
+						var fisheye_trans = fisheye({x: 3*cur_coords[0], y: 3*cur_coords[1]});
+
+						var x_size = collection[i/4]['draw_width']/2
+						var y_size = collection[i/4]['draw_height']/2
+
+						singleGeometry.vertices[i].x = fisheye_trans.x-x_size-((fisheye_trans.z-1)*0.7*x_size);
+						singleGeometry.vertices[i].y = fisheye_trans.y+y_size+((fisheye_trans.z-1)*0.7*y_size);
+						singleGeometry.vertices[i+1].x = fisheye_trans.x+x_size+((fisheye_trans.z-1)*0.7*x_size);
+						singleGeometry.vertices[i+1].y = fisheye_trans.y+y_size+((fisheye_trans.z-1)*0.7*y_size);
+						singleGeometry.vertices[i+2].x = fisheye_trans.x-x_size-((fisheye_trans.z-1)*0.7*x_size);
+						singleGeometry.vertices[i+2].y = fisheye_trans.y-y_size-((fisheye_trans.z-1)*0.7*y_size);
+						singleGeometry.vertices[i+3].x = fisheye_trans.x+x_size+((fisheye_trans.z-1)*0.7*x_size);
+						singleGeometry.vertices[i+3].y = fisheye_trans.y-y_size-((fisheye_trans.z-1)*0.7*y_size);
+					}
+					singleGeometry.verticesNeedUpdate = true;
+				}
 			}
 
 

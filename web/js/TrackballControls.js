@@ -8,7 +8,7 @@
 THREE.TrackballControls = function ( object, domElement ) {
 
 	var _this = this;
-	var STATE = { NONE: - 1, ROTATE: 2, ZOOM: 1, PAN: 0, TOUCH_PAN: 3, TOUCH_ZOOM: 4 };
+	var STATE = { NONE: - 1, ROTATE: 2, ZOOM: 1, PAN: 0, TOUCH_FISHEYE: 3, TOUCH_ZOOM_PAN: 4 };
 
 	this.object = object;
 	this.domElement = ( domElement !== undefined ) ? domElement : document;
@@ -208,7 +208,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		var factor;
 
-		if ( _state === STATE.TOUCH_ZOOM ) {
+		if ( _state === STATE.TOUCH_ZOOM_PAN ) {
 
 			factor = _touchZoomDistanceStart / _touchZoomDistanceEnd;
 			_touchZoomDistanceStart = _touchZoomDistanceEnd;
@@ -522,18 +522,20 @@ THREE.TrackballControls = function ( object, domElement ) {
 		switch ( event.touches.length ) {
 
 			case 1:
-				_state = STATE.TOUCH_PAN;
-				var x = ( event.touches[ 0 ].pageX );
-				var y = ( event.touches[ 0 ].pageY );
-				_panStart.copy( getMouseOnScreen( x, y ) );
-				_panEnd.copy( _panStart );
+				_state = STATE.TOUCH_FISHEYE;
+				// TODO
 				break;
 
 			default: // 2 or more
-				_state = STATE.TOUCH_ZOOM;
+				_state = STATE.TOUCH_ZOOM_PAN;
 				var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
 				var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
 				_touchZoomDistanceEnd = _touchZoomDistanceStart = Math.sqrt( dx * dx + dy * dy );
+				
+				var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
+				var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
+				_panStart.copy( getMouseOnScreen( x, y ) );
+				_panEnd.copy( _panStart );
 				break;
 
 		}
@@ -547,20 +549,22 @@ THREE.TrackballControls = function ( object, domElement ) {
 		if ( _this.enabled === false ) return;
 
 		event.preventDefault();
-		event.stopPropagation();
+		//event.stopPropagation();
 
 		switch ( event.touches.length ) {
 
 			case 1:
-				var x = ( event.touches[ 0 ].pageX );
-				var y = ( event.touches[ 0 ].pageY );
-				_panEnd.copy( getMouseOnScreen( x, y ) );
+				// TODO
 				break;
 
 			default: // 2 or more
 				var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
 				var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
 				_touchZoomDistanceEnd = Math.sqrt( dx * dx + dy * dy );
+				
+				var x = ( event.touches[ 0 ].pageX + event.touches[ 1 ].pageX ) / 2;
+				var y = ( event.touches[ 0 ].pageY + event.touches[ 1 ].pageY ) / 2;
+				_panEnd.copy( getMouseOnScreen( x, y ) );
 				break;
 
 		}
@@ -578,11 +582,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 				break;
 
 			case 1:
-				_state = STATE.TOUCH_PAN;
-				var x = ( event.touches[ 0 ].pageX );
-				var y = ( event.touches[ 0 ].pageY );
-				_panStart.copy( getMouseOnScreen( x, y ) );
-				_panEnd.copy( _panStart );
+				_state = STATE.TOUCH_FISHEYE;
+				// TODO
 				break;
 
 		}
