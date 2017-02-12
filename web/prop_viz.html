@@ -284,7 +284,10 @@
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.addEventListener( 'mousewheel', onMouseWheel, false);
 				document.addEventListener( 'DOMMouseScroll', onMouseWheel, false); // for firefox
+				document.addEventListener( 'touchstart', onTouchStart, false );
 				document.addEventListener( 'touchmove', onTouchmove, false );
+				document.addEventListener( 'touchend', onTouchEnd, false );
+				document.addEventListener( 'touchcancel', onTouchEnd, false );
 				renderer.domElement.addEventListener( 'mousedown', onWebGLMouseDown, false);
 				renderer.domElement.addEventListener( 'mouseup', onWebGLMouseUp, false);
 
@@ -318,7 +321,6 @@
 			}
 
 			function onDocumentMouseMove( event ) {
-
 				event.preventDefault();
 
 				if (controls.ismousedown) return;
@@ -360,7 +362,45 @@
 					singleGeometry.vertices[i+3].y = fisheye_trans.y-y_size-((fisheye_trans.z-1)*0.7*y_size);
 				}
 				singleGeometry.verticesNeedUpdate = true;
+			}
 
+			function onTouchStart( event ) {
+				var x = ( event.touches[ 0 ].pageX / window.innerWidth ) * 2 - 1;
+				var y = - ( event.touches[ 0 ].pageY / window.innerHeight ) * 2 + 1;
+				mouse_down_init_position = [x, y];
+			}
+
+			function onTouchEnd( event ) {
+				// reset fisheye-stuff
+				event.preventDefault();
+				for (var i = 0;i < singleGeometry.vertices.length;i+=4) {
+					var cur_coords = [collection[i/4]['embedding_x'], collection[i/4]['embedding_y']];
+					var x_size = collection[i/4]['draw_width']/2
+					var y_size = collection[i/4]['draw_height']/2
+
+					singleGeometry.vertices[i].x = (3*cur_coords[0])-x_size;
+					singleGeometry.vertices[i].y = (3*cur_coords[1])+y_size;
+					singleGeometry.vertices[i+1].x = (3*cur_coords[0])+x_size;
+					singleGeometry.vertices[i+1].y = (3*cur_coords[1])+y_size;
+					singleGeometry.vertices[i+2].x = (3*cur_coords[0])-x_size;
+					singleGeometry.vertices[i+2].y = (3*cur_coords[1])-y_size;
+					singleGeometry.vertices[i+3].x = (3*cur_coords[0])+x_size;
+					singleGeometry.vertices[i+3].y = (3*cur_coords[1])-y_size;
+				}
+				singleGeometry.verticesNeedUpdate = true;
+
+				var x = ( event.changedTouches[ 0 ].pageX / window.innerWidth ) * 2 - 1;
+				var y = - ( event.changedTouches[ 0 ].pageY / window.innerHeight ) * 2 + 1;
+				var old_x = mouse_down_init_position[0];
+				var old_y = mouse_down_init_position[1];
+				var distance = Math.sqrt((x-old_x)*(x-old_x) + (y-old_y)*(y-old_y));
+				if (currentIntersectFace >= 0 && distance < 0.01) {
+					var work_url = "http://samling.nasjonalmuseet.no/no/object/"+collection[currentIntersectFace].identifier
+					window.open(work_url, '_blank');
+				}
+
+				mouse.x = null;
+				mouse.y = null;
 			}
 
 			function onTouchmove( event ) {
@@ -420,12 +460,14 @@
 
 			function render() {
 
-
-				raycaster.setFromCamera( mouse, camera );
+				if (mouse.x != null) {
+					raycaster.setFromCamera( mouse, camera );
+					var intersects = raycaster.intersectObject( mesh );
+				} else {
+					var intersects = [];
+				}
 
 				// updates on entering/leaving tiles
-
-				var intersects = raycaster.intersectObject( mesh );
 
 				if ( intersects.length > 0 ) {
 					var face_index = Math.floor(intersects[0].face.a/4);
@@ -562,8 +604,10 @@
 			function onUIZoomOut(event) {
 				controls.zoomOut();
 			}
-			$('#ui_zoom_in').click(onUIZoomIn)
-			$('#ui_zoom_out').click(onUIZoomOut)
+			$('#ui_zoom_in').click(onUIZoomIn);
+			$('#ui_zoom_out').click(onUIZoomOut);
+			$('#ui_zoom_in').bind('touchend', onUIZoomIn);
+			$('#ui_zoom_out').bind('touchend', onUIZoomOut);
 
 			init();
 
